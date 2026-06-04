@@ -53,9 +53,7 @@ const handleSupabase: Handle = async ({ event, resolve }) => {
 	event.locals.session = session;
 	event.locals.user = user;
 
-	if (!event.locals.session && event.url.pathname.startsWith('/dashboard')) {
-		redirect(303, '/login');
-	}
+	
 
 	return resolve(event, {
 		filterSerializedResponseHeaders(name) {

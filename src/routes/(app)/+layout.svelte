@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
-	import { LayoutDashboard, Wallet, Tags, ArrowRightLeft, LogOut } from '@lucide/svelte';
+	import { LayoutDashboard, Wallet, Tags, ArrowRightLeft, LogOut, Settings } from '@lucide/svelte';
 
 	let { children } = $props();
 
 	const navItems = [
-		{ name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-		{ name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
-		{ name: 'Categories', href: '/dashboard/categories', icon: Tags },
-		{ name: 'Transactions', href: '/dashboard/transactions', icon: ArrowRightLeft }
+		{ name: 'Overview', href: '/', icon: LayoutDashboard },
+		{ name: 'Accounts', href: '/accounts', icon: Wallet },
+		{ name: 'Categories', href: '/categories', icon: Tags },
+		{ name: 'Transactions', href: '/transactions', icon: ArrowRightLeft },
+		{ name: 'Settings', href: '/settings', icon: Settings }
 	];
 </script>
 
@@ -21,7 +22,7 @@
 		<nav
 			class="flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6"
 		>
-			<a href="/dashboard" class="flex items-center gap-2 text-lg font-semibold md:text-base">
+			<a href="/" class="flex items-center gap-2 text-lg font-semibold md:text-base">
 				<span class="sr-only">Expense Tracker</span>
 				🪙
 			</a>
@@ -37,7 +38,7 @@
 			{/each}
 		</nav>
 		<div class="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-			<form method="POST" action="/dashboard?/logout" class="ml-auto">
+			<form method="POST" action="/?/logout" class="ml-auto">
 				<Button variant="outline" size="sm" type="submit">Log out</Button>
 			</form>
 		</div>
@@ -48,7 +49,7 @@
 		class="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden"
 	>
 		<div class="flex items-center gap-2 font-semibold">🪙 Expense Tracker</div>
-		<form method="POST" action="/dashboard?/logout">
+		<form method="POST" action="/?/logout">
 			<button type="submit" class="p-2 text-muted-foreground hover:text-foreground">
 				<LogOut class="h-5 w-5" />
 				<span class="sr-only">Log out</span>

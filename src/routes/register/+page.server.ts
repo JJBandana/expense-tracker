@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { session } }) => {
 	if (session) {
-		redirect(303, '/dashboard');
+		redirect(303, '/');
 	}
 };
 
@@ -26,6 +26,6 @@ export const actions: Actions = {
 			return fail(400, { email, error: true, message: error.message });
 		}
 
-		redirect(303, '/dashboard');
+		redirect(303, '/');
 	}
 };

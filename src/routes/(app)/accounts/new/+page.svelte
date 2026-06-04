@@ -14,7 +14,7 @@
 <div class="max-w-md mx-auto mt-8">
 	<div class="mb-6 flex items-center justify-between">
 		<h2 class="text-3xl font-bold tracking-tight">New Account</h2>
-		<a href="/dashboard/accounts" class={buttonVariants({ variant: 'outline' })}>Cancel</a>
+		<a href="/accounts" class={buttonVariants({ variant: 'outline' })}>Cancel</a>
 	</div>
 
 	<div class="rounded-xl border bg-card text-card-foreground shadow p-6">

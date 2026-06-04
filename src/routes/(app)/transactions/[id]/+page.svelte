@@ -8,12 +8,24 @@
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 	let loading = $state(false);
+	let isDeleting = $state(false);
 	
-	let selectedType = $state('expense');
-	let selectedAccount = $state(data.accounts.length > 0 ? data.accounts[0].id : '');
-	let selectedCategory = $state('');
+	let selectedType = $state(data.transaction.type);
+	let selectedAccount = $state(data.transaction.account_id);
+	let selectedCategory = $state(data.transaction.category_id ?? '');
 
-	// Filter categories based on transaction type
+	let tz = data.profile?.timezone || 'UTC';
+	let transactionDate = new Date(data.transaction.date);
+	let localDateTime = new Intl.DateTimeFormat('en-CA', {
+		timeZone: tz,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false
+	}).format(transactionDate).replace(', ', 'T');
+
 	let filteredCategories = $derived(
 		data.categories.filter((c) => c.type === selectedType)
 	);
@@ -31,8 +43,8 @@
 
 <div class="max-w-md mx-auto mt-8">
 	<div class="mb-6 flex items-center justify-between">
-		<h2 class="text-3xl font-bold tracking-tight">New Transaction</h2>
-		<a href="/dashboard/transactions" class={buttonVariants({ variant: 'outline' })}>Cancel</a>
+		<h2 class="text-3xl font-bold tracking-tight">Edit Transaction</h2>
+		<a href="/transactions" class={buttonVariants({ variant: 'outline' })}>Cancel</a>
 	</div>
 
 	<div class="rounded-xl border bg-card text-card-foreground shadow p-6">
@@ -40,13 +52,7 @@
 			<div class="mb-4 text-sm font-medium text-destructive">{form.message}</div>
 		{/if}
 		
-		{#if data.accounts.length === 0}
-			<div class="text-center py-4">
-				<p class="text-muted-foreground mb-4">You need to create an account first.</p>
-				<a href="/dashboard/accounts/new" class={buttonVariants()}>Create Account</a>
-			</div>
-		{:else}
-		<form method="POST" use:enhance={() => {
+		<form method="POST" action="?/update" use:enhance={() => {
 			loading = true;
 			return async ({ update }) => {
 				loading = false;
@@ -70,12 +76,12 @@
 
 			<div class="space-y-2">
 				<Label for="amount">Amount (¥)</Label>
-				<Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" required />
+				<Input id="amount" name="amount" type="number" step="0.01" value={data.transaction.amount} required />
 			</div>
 
 			<div class="space-y-2">
-				<Label for="date">Date</Label>
-				<Input id="date" name="date" type="date" required value={new Date().toISOString().split('T')[0]} />
+				<Label for="date">Date & Time</Label>
+				<Input id="date" name="date" type="datetime-local" required value={localDateTime} />
 			</div>
 
 			<div class="space-y-2">
@@ -110,13 +116,30 @@
 
 			<div class="space-y-2">
 				<Label for="notes">Notes (Optional)</Label>
-				<Input id="notes" name="notes" placeholder="What was this for?" />
+				<Input id="notes" name="notes" value={data.transaction.notes ?? ''} />
 			</div>
 
-			<Button type="submit" class="w-full" disabled={loading || !selectedAccount}>
-				{loading ? 'Saving...' : 'Save Transaction'}
+			<Button type="submit" class="w-full" disabled={loading || isDeleting || !selectedAccount}>
+				{loading ? 'Saving...' : 'Update Transaction'}
 			</Button>
 		</form>
-		{/if}
+
+		<div class="mt-8 border-t pt-6">
+			<form method="POST" action="?/delete" use:enhance={(e) => {
+				if (!confirm('Are you sure you want to delete this transaction?')) {
+					e.cancel();
+					return;
+				}
+				isDeleting = true;
+				return async ({ update }) => {
+					isDeleting = false;
+					update();
+				};
+			}}>
+				<Button type="submit" variant="destructive" class="w-full" disabled={loading || isDeleting}>
+					{isDeleting ? 'Deleting...' : 'Delete Transaction'}
+				</Button>
+			</form>
+		</div>
 	</div>
 </div>

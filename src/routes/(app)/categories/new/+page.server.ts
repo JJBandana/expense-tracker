@@ -16,13 +16,13 @@ export const actions: Actions = {
 			name,
 			icon: icon || null,
 			type,
-			user_id: user?.id
+			user_id: user!.id
 		});
 
 		if (error) {
 			return fail(400, { error: true, message: error.message });
 		}
 
-		redirect(303, '/dashboard/categories');
+		redirect(303, '/categories');
 	}
 };

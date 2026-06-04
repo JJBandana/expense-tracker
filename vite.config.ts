@@ -4,9 +4,14 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-	plugins: [
-		tailwindcss(),
-		sveltekit(),
-		paraglideVitePlugin({ project: './project.inlang', outdir: './src/lib/paraglide' })
-	]
+  server: {
+    allowedHosts: ['.jojomoka.space'],
+    host: true,
+    port: 3000
+  },
+  plugins: [
+    tailwindcss(),
+    sveltekit(),
+    paraglideVitePlugin({ project: './project.inlang', outdir: './src/lib/paraglide' })
+  ]
 });
