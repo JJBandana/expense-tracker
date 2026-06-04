@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
-	import { LayoutDashboard, Wallet, Tags, ArrowRightLeft, LogOut, Settings } from '@lucide/svelte';
+	import { LayoutDashboard, Wallet, Tags, ArrowRightLeft, LogOut, Settings, Users } from '@lucide/svelte';
 
 	let { children } = $props();
 
@@ -10,6 +10,7 @@
 		{ name: 'Accounts', href: '/accounts', icon: Wallet },
 		{ name: 'Categories', href: '/categories', icon: Tags },
 		{ name: 'Transactions', href: '/transactions', icon: ArrowRightLeft },
+		{ name: 'Groups', href: '/groups', icon: Users },
 		{ name: 'Settings', href: '/settings', icon: Settings }
 	];
 </script>
