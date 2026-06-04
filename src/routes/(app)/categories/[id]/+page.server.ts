@@ -19,8 +19,9 @@ export const actions: Actions = {
 	update: async ({ request, params, locals: { supabase, user } }) => {
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
-		const icon = formData.get('icon') as string;
 		const type = formData.get('type') as string;
+		const icon = formData.get('icon') as string;
+		const budget = formData.get('budget') as string;
 
 		if (!name || !type) {
 			return fail(400, { missing: true });
@@ -28,7 +29,12 @@ export const actions: Actions = {
 
 		const { error } = await supabase
 			.from('categories')
-			.update({ name, icon: icon || null, type })
+			.update({ 
+				name, 
+				type, 
+				icon: icon || '📝',
+				monthly_budget: budget ? parseFloat(budget) : null 
+			})
 			.eq('id', params.id)
 			.eq('user_id', user!.id);
 

@@ -54,6 +54,14 @@
 				<input type="hidden" name="type" value={selectedType} required />
 			</div>
 
+			{#if selectedType === 'expense'}
+				<div class="space-y-2">
+					<Label for="budget">Monthly Budget (Optional)</Label>
+					<Input type="number" step="0.01" id="budget" name="budget" placeholder="0.00" value={data.category.monthly_budget} min="0" />
+					<p class="text-xs text-muted-foreground">Set a limit to track your spending.</p>
+				</div>
+			{/if}
+
 			<Button type="submit" class="w-full" disabled={loading || isDeleting || !selectedType}>
 				{loading ? 'Saving...' : 'Update Category'}
 			</Button>

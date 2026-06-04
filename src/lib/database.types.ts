@@ -72,6 +72,7 @@ export type Database = {
           created_at: string
           icon: string | null
           id: string
+          monthly_budget: number | null
           name: string
           parent_id: string | null
           type: string
@@ -81,6 +82,7 @@ export type Database = {
           created_at?: string
           icon?: string | null
           id?: string
+          monthly_budget?: number | null
           name: string
           parent_id?: string | null
           type: string
@@ -90,6 +92,7 @@ export type Database = {
           created_at?: string
           icon?: string | null
           id?: string
+          monthly_budget?: number | null
           name?: string
           parent_id?: string | null
           type?: string
