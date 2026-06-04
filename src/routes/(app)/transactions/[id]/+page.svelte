@@ -12,6 +12,7 @@
 	
 	let selectedType = $state(data.transaction.type);
 	let selectedAccount = $state(data.transaction.account_id);
+	let selectedDestinationAccount = $state(data.transaction.destination_account_id ?? '');
 	let selectedCategory = $state(data.transaction.category_id ?? '');
 
 	let tz = data.profile?.timezone || 'UTC';
@@ -71,12 +72,16 @@
 						<input type="radio" bind:group={selectedType} name="type" value="income" />
 						Income
 					</label>
+					<label class="flex items-center gap-2">
+						<input type="radio" bind:group={selectedType} name="type" value="transfer" />
+						Transfer
+					</label>
 				</div>
 			</div>
 
 			<div class="space-y-2">
 				<Label for="amount">Amount (¥)</Label>
-				<Input id="amount" name="amount" type="number" step="0.01" value={data.transaction.amount} required />
+				<Input id="amount" name="amount" type="number" step="0.01" value={data.transaction.amount} inputmode="decimal" required />
 			</div>
 
 			<div class="space-y-2">
@@ -96,23 +101,40 @@
 						{/each}
 					</Select.Content>
 				</Select.Root>
-				<input type="hidden" name="account_id" value={selectedAccount} required />
+				<input type="hidden" name="account" value={selectedAccount} required />
 			</div>
 
-			<div class="space-y-2">
-				<Label for="category_id">Category</Label>
-				<Select.Root type="single" bind:value={selectedCategory}>
-					<Select.Trigger>
-						{filteredCategories.find(c => c.id === selectedCategory)?.name ?? 'Select category'}
-					</Select.Trigger>
-					<Select.Content>
-						{#each filteredCategories as category}
-							<Select.Item value={category.id}>{category.icon ?? ''} {category.name}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-				<input type="hidden" name="category_id" value={selectedCategory} />
-			</div>
+			{#if selectedType === 'transfer'}
+				<div class="space-y-2">
+					<Label for="destination_account">To Account</Label>
+					<Select.Root type="single" bind:value={selectedDestinationAccount}>
+						<Select.Trigger>
+							{data.accounts.find(a => a.id === selectedDestinationAccount)?.name ?? 'Select account'}
+						</Select.Trigger>
+						<Select.Content>
+							{#each data.accounts.filter(a => a.id !== selectedAccount) as account}
+								<Select.Item value={account.id}>{account.name}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+					<input type="hidden" name="destination_account" value={selectedDestinationAccount} />
+				</div>
+			{:else}
+				<div class="space-y-2">
+					<Label for="category">Category</Label>
+					<Select.Root type="single" bind:value={selectedCategory}>
+						<Select.Trigger>
+							{filteredCategories.find(c => c.id === selectedCategory)?.name ?? 'Select category'}
+						</Select.Trigger>
+						<Select.Content>
+							{#each filteredCategories as category}
+								<Select.Item value={category.id}>{category.icon ?? ''} {category.name}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+					<input type="hidden" name="category" value={selectedCategory} />
+				</div>
+			{/if}
 
 			<div class="space-y-2">
 				<Label for="notes">Notes (Optional)</Label>

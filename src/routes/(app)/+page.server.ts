@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => 
 		supabase.from('accounts').select('balance'),
 		supabase
 			.from('transactions')
-			.select('*, categories(name, icon, type), accounts(name)')
+			.select('*, categories(name, icon, type), accounts!transactions_account_id_fkey(name), destination_account:accounts!transactions_destination_account_id_fkey(name)')
 			.gte('date', utcStartOfMonth)
 			.order('date', { ascending: false })
 	]);

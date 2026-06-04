@@ -104,15 +104,22 @@
 							<a href="/transactions/{tx.id}" class="flex items-center justify-between hover:bg-muted/50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
 								<div class="flex items-center gap-4">
 									<div class="text-xl bg-muted h-10 w-10 flex items-center justify-center rounded-full">
-										{tx.categories?.icon ?? (tx.type === 'income' ? '💰' : '📝')}
+										{tx.type === 'transfer' ? '🔄' : (tx.categories?.icon ?? (tx.type === 'income' ? '💰' : '📝'))}
 									</div>
 									<div class="space-y-1">
-										<p class="text-sm font-medium leading-none">{tx.categories?.name ?? 'Uncategorized'}</p>
-										<p class="text-xs text-muted-foreground">{tx.accounts?.name} • {formatDate(tx.date, data.profile?.timezone || 'UTC')}</p>
+										<p class="text-sm font-medium leading-none">{tx.type === 'transfer' ? 'Transfer' : (tx.categories?.name ?? 'Uncategorized')}</p>
+										<p class="text-xs text-muted-foreground">
+											{#if tx.type === 'transfer'}
+												{tx.accounts?.name} ➡️ {tx.destination_account?.name}
+											{:else}
+												{tx.accounts?.name}
+											{/if}
+											 • {formatDate(tx.date, data.profile?.timezone || 'UTC')}
+										</p>
 									</div>
 								</div>
-								<div class="font-medium text-sm {tx.type === 'expense' ? 'text-destructive' : 'text-green-600'}">
-									{tx.type === 'expense' ? '-' : '+'}¥{tx.amount.toFixed(2)}
+								<div class="font-medium text-sm {tx.type === 'expense' ? 'text-destructive' : tx.type === 'income' ? 'text-green-600' : 'text-blue-600'}">
+									{tx.type === 'expense' ? '-' : tx.type === 'income' ? '+' : ''}¥{Math.abs(tx.amount).toFixed(2)}
 								</div>
 							</a>
 						{/each}

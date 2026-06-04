@@ -23,15 +23,22 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 export const actions: Actions = {
 	update: async ({ request, params, locals: { supabase, user } }) => {
 		const formData = await request.formData();
-		const amount = parseFloat(formData.get('amount') as string);
+		const account = formData.get('account') as string;
+		const destination_account = formData.get('destination_account') as string;
+		const category = formData.get('category') as string;
+		const amount = formData.get('amount') as string;
 		const type = formData.get('type') as string;
-		const dateStr = formData.get('date') as string;
-		const account_id = formData.get('account_id') as string;
-		const category_id = formData.get('category_id') as string;
 		const notes = formData.get('notes') as string;
+		const dateStr = formData.get('date') as string;
 
-		if (!amount || !type || !dateStr || !account_id) {
+		if (!account || !amount || !type || !dateStr) {
 			return fail(400, { missing: true });
+		}
+		if (type === 'transfer' && !destination_account) {
+			return fail(400, { missing_destination: true });
+		}
+		if (type !== 'transfer' && !category) {
+			return fail(400, { missing_category: true });
 		}
 
 		const { data: profile } = await supabase.from('profiles').select('timezone').eq('id', user!.id).single();
@@ -49,12 +56,13 @@ export const actions: Actions = {
 		const { error } = await supabase
 			.from('transactions')
 			.update({
-				amount,
+				account_id: account,
+				destination_account_id: type === 'transfer' ? destination_account : null,
+				category_id: type === 'transfer' ? null : category,
+				amount: parseFloat(amount),
 				type,
-				date: utcDateString,
-				account_id,
-				category_id: category_id || null,
-				notes: notes || null
+				notes: notes || null,
+				date: utcDateString
 			})
 			.eq('id', params.id)
 			.eq('user_id', user!.id);

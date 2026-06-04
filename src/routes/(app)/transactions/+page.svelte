@@ -54,20 +54,25 @@
 		<a href="/transactions/{transaction.id}" class="rounded-xl border bg-card text-card-foreground shadow p-4 flex justify-between items-center hover:border-primary transition-colors cursor-pointer block">
 			<div class="flex items-center gap-4">
 				<div class="text-2xl bg-muted h-10 w-10 flex items-center justify-center rounded-full">
-					{transaction.categories?.icon ?? '📝'}
+					{transaction.type === 'transfer' ? '🔄' : (transaction.categories?.icon ?? '📝')}
 				</div>
 				<div>
-					<p class="font-medium">{transaction.categories?.name ?? 'Uncategorized'}</p>
+					<p class="font-medium">{transaction.type === 'transfer' ? 'Transfer' : (transaction.categories?.name ?? 'Uncategorized')}</p>
 					<p class="text-sm text-muted-foreground">
-						{transaction.accounts?.name} • {formatDate(transaction.date, data.profile?.timezone || 'UTC')}
+						{#if transaction.type === 'transfer'}
+							{transaction.accounts?.name} ➡️ {transaction.destination_account?.name}
+						{:else}
+							{transaction.accounts?.name}
+						{/if}
+						 • {formatDate(transaction.date, data.profile?.timezone || 'UTC')}
 						{#if transaction.notes}
 							<br/><span class="text-xs italic truncate max-w-[150px] inline-block">{transaction.notes}</span>
 						{/if}
 					</p>
 				</div>
 			</div>
-			<div class="font-bold {transaction.type === 'expense' ? 'text-destructive' : 'text-green-600'}">
-				{transaction.type === 'expense' ? '-' : '+'}¥{Math.abs(transaction.amount).toFixed(2)}
+			<div class="font-bold {transaction.type === 'expense' ? 'text-destructive' : transaction.type === 'income' ? 'text-green-600' : 'text-blue-600'}">
+				{transaction.type === 'expense' ? '-' : transaction.type === 'income' ? '+' : ''}¥{Math.abs(transaction.amount).toFixed(2)}
 			</div>
 		</a>
 	{:else}
