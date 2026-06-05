@@ -1,16 +1,73 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Users, Mail } from '@lucide/svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+	
+	let loadingId = $state('');
+	let errorMsg = $state('');
+
+	async function handleAccept(invId: string, groupId: string, role: string) {
+		loadingId = invId;
+		errorMsg = '';
+
+		const { error: insertError } = await data.supabase!.from('group_members').insert({
+			group_id: groupId,
+			user_id: data.user!.id,
+			role: role
+		});
+
+		if (insertError) {
+			errorMsg = insertError.message;
+			loadingId = '';
+			return;
+		}
+
+		const { error: deleteError } = await data.supabase!
+			.from('group_invitations')
+			.delete()
+			.eq('id', invId);
+
+		loadingId = '';
+		
+		if (deleteError) {
+			errorMsg = deleteError.message;
+		} else {
+			invalidateAll();
+		}
+	}
+
+	async function handleDecline(invId: string) {
+		loadingId = invId;
+		errorMsg = '';
+
+		const { error } = await data.supabase!
+			.from('group_invitations')
+			.delete()
+			.eq('id', invId);
+
+		loadingId = '';
+		
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			invalidateAll();
+		}
+	}
 </script>
 
 <div class="flex items-center justify-between space-y-2 mb-6">
 	<h2 class="text-3xl font-bold tracking-tight">Shared Groups</h2>
 	<a href="/groups/new" class={buttonVariants()}>Create Group</a>
 </div>
+
+{#if errorMsg}
+	<div class="mb-6 rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm font-medium text-destructive">
+		{errorMsg}
+	</div>
+{/if}
 
 {#if data.invitations.length > 0}
 	<div class="mb-8">
@@ -28,14 +85,8 @@
 						</div>
 					</div>
 					<div class="flex gap-2">
-						<form method="POST" action="?/accept" use:enhance>
-							<input type="hidden" name="invitation_id" value={inv.id} />
-							<Button type="submit" size="sm">Accept</Button>
-						</form>
-						<form method="POST" action="?/decline" use:enhance>
-							<input type="hidden" name="invitation_id" value={inv.id} />
-							<Button type="submit" variant="outline" size="sm">Decline</Button>
-						</form>
+						<Button type="button" size="sm" onclick={() => handleAccept(inv.id, inv.group_id, inv.role)} disabled={loadingId === inv.id}>Accept</Button>
+						<Button type="button" variant="outline" size="sm" onclick={() => handleDecline(inv.id)} disabled={loadingId === inv.id}>Decline</Button>
 					</div>
 				</div>
 			{/each}

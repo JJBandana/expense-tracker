@@ -1,0 +1,155 @@
+Loading svelte-check in workspace: /home/jojo/Projects/expense-tracker
+Getting Svelte diagnostics...
+
+/home/jojo/Projects/expense-tracker/src/routes/+layout.svelte:14:30
+Error: 'supabase' is possibly 'null'. (ts)
+	$effect(() => {
+		const { data: authData } = supabase.auth.onAuthStateChange((_, newSession) => {
+			if (newSession?.expires_at !== session?.expires_at) {
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/accounts/[id]/+page.svelte:13:28
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let isDeleting = $state(false);
+	let selectedType = $state(data.account.type);
+	let name = $state(data.account.name);
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/accounts/[id]/+page.svelte:14:20
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let selectedType = $state(data.account.type);
+	let name = $state(data.account.name);
+	let balance = $state(data.account.balance.toString());
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/accounts/[id]/+page.svelte:15:23
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let name = $state(data.account.name);
+	let balance = $state(data.account.balance.toString());
+	let errorMsg = $state('');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/categories/[id]/+page.svelte:13:28
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let isDeleting = $state(false);
+	let selectedType = $state(data.category.type);
+	let name = $state(data.category.name);
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/categories/[id]/+page.svelte:14:20
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let selectedType = $state(data.category.type);
+	let name = $state(data.category.name);
+	let icon = $state(data.category.icon ?? '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/categories/[id]/+page.svelte:15:20
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let name = $state(data.category.name);
+	let icon = $state(data.category.icon ?? '');
+	let budget = $state(data.category.monthly_budget?.toString() ?? '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/categories/[id]/+page.svelte:16:22
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let icon = $state(data.category.icon ?? '');
+	let budget = $state(data.category.monthly_budget?.toString() ?? '');
+	let errorMsg = $state('');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/groups/[id]/+page.svelte:18:31
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let inviteEmail = $state('');
+	let renameGroupName = $state(data.group.name);
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/settings/+page.svelte:10:32
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	
+	let selectedTimezone = $state(data.profile.timezone);
+	let errorMsg = $state('');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/[id]/+page.svelte:15:28
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+	let selectedType = $state(data.transaction.type);
+	let selectedAccount = $state(data.transaction.account_id);
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/[id]/+page.svelte:16:31
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let selectedType = $state(data.transaction.type);
+	let selectedAccount = $state(data.transaction.account_id);
+	let selectedDestinationAccount = $state(data.transaction.destination_account_id ?? '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/[id]/+page.svelte:17:42
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let selectedAccount = $state(data.transaction.account_id);
+	let selectedDestinationAccount = $state(data.transaction.destination_account_id ?? '');
+	let selectedCategory = $state(data.transaction.category_id ?? '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/[id]/+page.svelte:18:32
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let selectedDestinationAccount = $state(data.transaction.destination_account_id ?? '');
+	let selectedCategory = $state(data.transaction.category_id ?? '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/[id]/+page.svelte:20:22
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	
+	let amount = $state(data.transaction.amount.toString());
+	let notes = $state(data.transaction.notes ?? '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/[id]/+page.svelte:21:21
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let amount = $state(data.transaction.amount.toString());
+	let notes = $state(data.transaction.notes ?? '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/[id]/+page.svelte:23:11
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+	let tz = data.profile?.timezone || 'UTC';
+	let transactionDate = new Date(data.transaction.date);
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/[id]/+page.svelte:24:33
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let tz = data.profile?.timezone || 'UTC';
+	let transactionDate = new Date(data.transaction.date);
+	let localDateTime = $state(new Intl.DateTimeFormat('en-CA', {
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/new/+page.svelte:16:15
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+	let lastTx = data.lastTx;
+	let selectedType = $state(lastTx?.type || 'expense');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/new/+page.svelte:18:54
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let selectedType = $state(lastTx?.type || 'expense');
+	let selectedAccount = $state(lastTx?.account_id || (data.accounts.length > 0 ? data.accounts[0].id : ''));
+	let selectedCategory = $state(lastTx?.category_id || '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/new/+page.svelte:18:81
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let selectedType = $state(lastTx?.type || 'expense');
+	let selectedAccount = $state(lastTx?.account_id || (data.accounts.length > 0 ? data.accounts[0].id : ''));
+	let selectedCategory = $state(lastTx?.category_id || '');
+
+/home/jojo/Projects/expense-tracker/src/routes/(app)/transactions/new/+page.svelte:26:11
+Warn: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+	let now = new Date();
+	let tz = data.profile?.timezone || 'UTC';
+	let currentDateTime = $state(new Intl.DateTimeFormat('en-CA', {
+
+====================================
+svelte-check found 1 error and 21 warnings in 7 files

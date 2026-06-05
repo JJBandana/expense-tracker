@@ -11,6 +11,7 @@
 	let { supabase, session } = $derived(data);
 
 	$effect(() => {
+		if (!supabase) return;
 		const { data: authData } = supabase.auth.onAuthStateChange((_, newSession) => {
 			if (newSession?.expires_at !== session?.expires_at) {
 				invalidate('supabase:auth');

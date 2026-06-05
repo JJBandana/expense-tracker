@@ -1,9 +1,8 @@
-import type { Actions, PageServerLoad } from './$types';
-import { redirect } from '@sveltejs/kit';
+import type { PageLoad } from './$types';
 import { toDate } from 'date-fns-tz';
 
-export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => {
-	const { profile } = await parent();
+export const load: PageLoad = async ({ parent }) => {
+	const { supabase, profile } = await parent();
 	const timeZone = profile?.timezone || 'UTC';
 
 	const now = new Date();
@@ -16,8 +15,8 @@ export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => 
 	const utcStartOfMonth = toDate(localStartStr, { timeZone }).toISOString();
 
 	const [accountsResult, transactionsResult] = await Promise.all([
-		supabase.from('accounts').select('balance'),
-		supabase
+		supabase!.from('accounts').select('balance'),
+		supabase!
 			.from('transactions')
 			.select('*, categories(name, icon, type), accounts!transactions_account_id_fkey(name), destination_account:accounts!transactions_destination_account_id_fkey(name)')
 			.gte('date', utcStartOfMonth)
@@ -64,11 +63,4 @@ export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => 
 		recentTransactions,
 		topCategories
 	};
-};
-
-export const actions: Actions = {
-	logout: async ({ locals: { supabase } }) => {
-		await supabase.auth.signOut();
-		redirect(303, '/login');
-	}
 };

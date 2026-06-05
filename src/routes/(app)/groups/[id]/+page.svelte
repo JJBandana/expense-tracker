@@ -1,16 +1,121 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
+	import { invalidateAll } from '$app/navigation';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
 	import { Users, Mail, Trash2, UserPlus } from '@lucide/svelte';
-	import type { ActionData, PageData } from './$types';
+	import type { PageData } from './$types';
 
-	let { form, data }: { form: ActionData; data: PageData } = $props();
+	let { data }: { data: PageData } = $props();
 	
 	let loading = $state(false);
 	let selectedRole = $state('member');
+	let errorMsg = $state('');
+	
+	let inviteEmail = $state('');
+	let renameGroupName = $state(data.group.name);
+
+	async function handleRemoveMember(userId: string) {
+		loading = true;
+		errorMsg = '';
+		const { error } = await data.supabase!
+			.from('group_members')
+			.delete()
+			.eq('group_id', data.group.id)
+			.eq('user_id', userId);
+
+		loading = false;
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			if (userId === data.user?.id) {
+				goto('/groups');
+			} else {
+				invalidateAll();
+			}
+		}
+	}
+
+	async function handleInvite(e: Event) {
+		e.preventDefault();
+		loading = true;
+		errorMsg = '';
+
+		const { error } = await data.supabase!.from('group_invitations').insert({
+			group_id: data.group.id,
+			email: inviteEmail,
+			role: selectedRole,
+			invited_by: data.user!.id
+		});
+
+		loading = false;
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			inviteEmail = '';
+			invalidateAll();
+		}
+	}
+
+	async function handleRevokeInvite(inviteId: string) {
+		loading = true;
+		errorMsg = '';
+
+		const { error } = await data.supabase!
+			.from('group_invitations')
+			.delete()
+			.eq('id', inviteId)
+			.eq('group_id', data.group.id);
+
+		loading = false;
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			invalidateAll();
+		}
+	}
+
+	async function handleUpdateGroup(e: Event) {
+		e.preventDefault();
+		loading = true;
+		errorMsg = '';
+
+		const { error } = await data.supabase!
+			.from('groups')
+			.update({ name: renameGroupName })
+			.eq('id', data.group.id);
+
+		loading = false;
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			invalidateAll();
+		}
+	}
+
+	async function handleDeleteGroup(e: Event) {
+		e.preventDefault();
+		if (!confirm('Are you sure you want to delete this entire group? This action cannot be undone.')) {
+			return;
+		}
+
+		loading = true;
+		errorMsg = '';
+
+		const { error } = await data.supabase!
+			.from('groups')
+			.delete()
+			.eq('id', data.group.id);
+
+		loading = false;
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			goto('/groups');
+		}
+	}
 </script>
 
 <div class="mx-auto mt-8 max-w-4xl space-y-8">
@@ -27,9 +132,9 @@
 		<a href="/groups" class={buttonVariants({ variant: 'outline' })}>Back</a>
 	</div>
 
-	{#if form?.message}
+	{#if errorMsg}
 		<div class="rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm font-medium text-destructive">
-			{form.message}
+			{errorMsg}
 		</div>
 	{/if}
 
@@ -50,12 +155,9 @@
 									{member.role.charAt(0).toUpperCase() + member.role.slice(1)}
 								</span>
 								{#if data.isAdmin && member.user_id !== data.user?.id}
-									<form method="POST" action="?/removeMember" use:enhance>
-										<input type="hidden" name="user_id" value={member.user_id} />
-										<Button type="submit" variant="ghost" size="icon" class="text-destructive hover:text-destructive hover:bg-destructive/10">
-											<Trash2 class="h-4 w-4" />
-										</Button>
-									</form>
+									<Button type="button" variant="ghost" size="icon" class="text-destructive hover:text-destructive hover:bg-destructive/10" onclick={() => handleRemoveMember(member.user_id)} disabled={loading}>
+										<Trash2 class="h-4 w-4" />
+									</Button>
 								{/if}
 							</div>
 						</div>
@@ -64,10 +166,9 @@
 			</div>
 
 			<!-- Leave Group -->
-			<form method="POST" action="?/removeMember" use:enhance class="text-right">
-				<input type="hidden" name="user_id" value={data.user?.id} />
-				<Button type="submit" variant="destructive">Leave Group</Button>
-			</form>
+			<div class="text-right">
+				<Button type="button" variant="destructive" onclick={() => handleRemoveMember(data.user!.id)} disabled={loading}>Leave Group</Button>
+			</div>
 		</div>
 
 		<!-- Invites -->
@@ -78,21 +179,10 @@
 						<UserPlus class="h-5 w-5" />
 						Invite New Member
 					</h3>
-					<form
-						method="POST"
-						action="?/invite"
-						use:enhance={() => {
-							loading = true;
-							return async ({ update }) => {
-								loading = false;
-								update();
-							};
-						}}
-						class="space-y-4"
-					>
+					<form onsubmit={handleInvite} class="space-y-4">
 						<div class="space-y-2">
 							<Label for="email">Email Address</Label>
-							<Input id="email" name="email" type="email" placeholder="friend@example.com" required />
+							<Input id="email" type="email" bind:value={inviteEmail} placeholder="friend@example.com" required />
 						</div>
 
 						<div class="space-y-2">
@@ -106,7 +196,6 @@
 									<Select.Item value="admin">Admin</Select.Item>
 								</Select.Content>
 							</Select.Root>
-							<input type="hidden" name="role" value={selectedRole} />
 						</div>
 
 						<Button type="submit" class="w-full" disabled={loading}>
@@ -128,10 +217,7 @@
 										<p class="font-medium">{inv.email}</p>
 										<p class="text-sm text-muted-foreground">Role: {inv.role.charAt(0).toUpperCase() + inv.role.slice(1)}</p>
 									</div>
-									<form method="POST" action="?/revokeInvite" use:enhance>
-										<input type="hidden" name="invitation_id" value={inv.id} />
-										<Button type="submit" variant="ghost" size="sm" class="text-destructive">Revoke</Button>
-									</form>
+									<Button type="button" variant="ghost" size="sm" class="text-destructive" onclick={() => handleRevokeInvite(inv.id)} disabled={loading}>Revoke</Button>
 								</div>
 							{/each}
 						</div>
@@ -143,30 +229,17 @@
 			<div class="space-y-6">
 				<div class="rounded-xl border border-destructive/20 bg-card p-6 text-card-foreground shadow">
 					<h3 class="text-xl font-semibold mb-4 text-destructive">Group Settings</h3>
-					<form
-						method="POST"
-						action="?/updateGroup"
-						use:enhance
-						class="space-y-4 mb-6"
-					>
+					<form onsubmit={handleUpdateGroup} class="space-y-4 mb-6">
 						<div class="space-y-2">
 							<Label for="group_name">Rename Group</Label>
 							<div class="flex gap-2">
-								<Input id="group_name" name="name" value={data.group.name} required />
-								<Button type="submit" variant="secondary">Rename</Button>
+								<Input id="group_name" bind:value={renameGroupName} required />
+								<Button type="submit" variant="secondary" disabled={loading}>Rename</Button>
 							</div>
 						</div>
 					</form>
-					<form
-						method="POST"
-						action="?/deleteGroup"
-						use:enhance={(e) => {
-							if (!confirm('Are you sure you want to delete this entire group? This action cannot be undone.')) {
-								e.cancel();
-							}
-						}}
-					>
-						<Button type="submit" variant="destructive" class="w-full">Delete Group</Button>
+					<form onsubmit={handleDeleteGroup}>
+						<Button type="submit" variant="destructive" class="w-full" disabled={loading}>Delete Group</Button>
 					</form>
 				</div>
 			</div>

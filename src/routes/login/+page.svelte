@@ -1,17 +1,39 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import type { ActionData, PageData } from './$types';
+	import { goto } from '$app/navigation';
+	import type { PageData } from './$types';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 
-	let { form, data }: { form: ActionData; data: PageData } = $props();
+	let { data }: { data: PageData } = $props();
 
 	let loading = $state(false);
+	let email = $state('');
+	let password = $state('');
+	let errorMsg = $state('');
+
+	const handleLogin = async (e: Event) => {
+		e.preventDefault();
+		loading = true;
+		errorMsg = '';
+
+		const { error } = await data.supabase!.auth.signInWithPassword({
+			email,
+			password
+		});
+
+		loading = false;
+
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			goto('/');
+		}
+	};
 
 	const signInWithGoogle = async () => {
 		loading = true;
-		await data.supabase.auth.signInWithOAuth({
+		await data.supabase!.auth.signInWithOAuth({
 			provider: 'google',
 			options: {
 				redirectTo: `${location.origin}/auth/callback`
@@ -27,23 +49,17 @@
 			<p class="text-sm text-muted-foreground">Enter your email and password to access your account.</p>
 		</div>
 		<div class="p-6 pt-0">
-			{#if form?.message}
-				<div class="mb-4 text-sm font-medium text-destructive">{form.message}</div>
+			{#if errorMsg}
+				<div class="mb-4 text-sm font-medium text-destructive">{errorMsg}</div>
 			{/if}
-			<form method="POST" action="?/login" use:enhance={() => {
-				loading = true;
-				return async ({ update }) => {
-					loading = false;
-					update();
-				};
-			}} class="space-y-4">
+			<form onsubmit={handleLogin} class="space-y-4">
 				<div class="space-y-2">
 					<Label for="email">Email</Label>
-					<Input id="email" name="email" type="email" placeholder="m@example.com" value={form?.email ?? ''} required />
+					<Input id="email" type="email" placeholder="m@example.com" bind:value={email} required />
 				</div>
 				<div class="space-y-2">
 					<Label for="password">Password</Label>
-					<Input id="password" name="password" type="password" required />
+					<Input id="password" type="password" bind:value={password} required />
 				</div>
 				<Button type="submit" class="w-full" disabled={loading}>
 					{loading ? 'Logging in...' : 'Login'}

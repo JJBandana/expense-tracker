@@ -1,15 +1,82 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import type { ActionData, PageData } from './$types';
+	import type { PageData } from './$types';
 
-	let { form, data }: { form: ActionData; data: PageData } = $props();
+	let { data }: { data: PageData } = $props();
+	
 	let loading = $state(false);
 	let isDeleting = $state(false);
 	let selectedType = $state(data.category.type);
+	let name = $state(data.category.name);
+	let icon = $state(data.category.icon ?? '');
+	let budget = $state(data.category.monthly_budget?.toString() ?? '');
+	let errorMsg = $state('');
+
+	async function handleUpdate(e: Event) {
+		e.preventDefault();
+		loading = true;
+		errorMsg = '';
+
+		if (!selectedType) {
+			errorMsg = 'Please select a category type';
+			loading = false;
+			return;
+		}
+
+		const updateData: any = {
+			name,
+			type: selectedType,
+			icon: icon || null
+		};
+
+		if (selectedType === 'expense') {
+			updateData.monthly_budget = budget ? Number(budget) : null;
+		} else {
+			updateData.monthly_budget = null;
+		}
+
+		const { error } = await data.supabase!
+			.from('categories')
+			.update(updateData)
+			.eq('id', data.category.id)
+			.eq('user_id', data.user!.id);
+
+		loading = false;
+
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			goto('/categories');
+		}
+	}
+
+	async function handleDelete(e: Event) {
+		e.preventDefault();
+		if (!confirm('Are you sure you want to delete this category?')) {
+			return;
+		}
+		
+		isDeleting = true;
+		errorMsg = '';
+
+		const { error } = await data.supabase!
+			.from('categories')
+			.delete()
+			.eq('id', data.category.id)
+			.eq('user_id', data.user!.id);
+
+		isDeleting = false;
+
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			goto('/categories');
+		}
+	}
 </script>
 
 <div class="max-w-md mx-auto mt-8">
@@ -19,24 +86,18 @@
 	</div>
 
 	<div class="rounded-xl border bg-card text-card-foreground shadow p-6">
-		{#if form?.message}
-			<div class="mb-4 text-sm font-medium text-destructive">{form.message}</div>
+		{#if errorMsg}
+			<div class="mb-4 text-sm font-medium text-destructive">{errorMsg}</div>
 		{/if}
-		<form method="POST" action="?/update" use:enhance={() => {
-			loading = true;
-			return async ({ update }) => {
-				loading = false;
-				update();
-			};
-		}} class="space-y-4">
+		<form onsubmit={handleUpdate} class="space-y-4">
 			<div class="space-y-2">
 				<Label for="name">Category Name</Label>
-				<Input id="name" name="name" value={data.category.name} required />
+				<Input id="name" bind:value={name} required />
 			</div>
 			
 			<div class="space-y-2">
 				<Label for="icon">Icon (Emoji)</Label>
-				<Input id="icon" name="icon" value={data.category.icon ?? ''} />
+				<Input id="icon" bind:value={icon} />
 			</div>
 
 			<div class="space-y-2">
@@ -51,13 +112,12 @@
 						<Select.Item value="transfer">Transfer</Select.Item>
 					</Select.Content>
 				</Select.Root>
-				<input type="hidden" name="type" value={selectedType} required />
 			</div>
 
 			{#if selectedType === 'expense'}
 				<div class="space-y-2">
 					<Label for="budget">Monthly Budget (Optional)</Label>
-					<Input type="number" step="0.01" id="budget" name="budget" placeholder="0.00" value={data.category.monthly_budget} min="0" />
+					<Input type="number" step="0.01" id="budget" bind:value={budget} placeholder="0.00" min="0" />
 					<p class="text-xs text-muted-foreground">Set a limit to track your spending.</p>
 				</div>
 			{/if}
@@ -71,17 +131,7 @@
 			<h3 class="text-lg font-medium text-destructive mb-2">Danger Zone</h3>
 			<p class="text-sm text-muted-foreground mb-4">Deleting this category will set associated transactions to uncategorized.</p>
 			
-			<form method="POST" action="?/delete" use:enhance={(e) => {
-				if (!confirm('Are you sure you want to delete this category?')) {
-					e.cancel();
-					return;
-				}
-				isDeleting = true;
-				return async ({ update }) => {
-					isDeleting = false;
-					update();
-				};
-			}}>
+			<form onsubmit={handleDelete}>
 				<Button type="submit" variant="destructive" class="w-full" disabled={loading || isDeleting}>
 					{isDeleting ? 'Deleting...' : 'Delete Category'}
 				</Button>

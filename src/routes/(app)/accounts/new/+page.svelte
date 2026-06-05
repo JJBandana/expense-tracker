@@ -1,14 +1,45 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import type { ActionData } from './$types';
+	import type { PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { data }: { data: PageData } = $props();
+	
 	let loading = $state(false);
 	let selectedType = $state('');
+	let name = $state('');
+	let balance = $state('0');
+	let errorMsg = $state('');
+
+	async function handleCreate(e: Event) {
+		e.preventDefault();
+		loading = true;
+		errorMsg = '';
+
+		if (!selectedType) {
+			errorMsg = 'Please select an account type';
+			loading = false;
+			return;
+		}
+
+		const { error } = await data.supabase!.from('accounts').insert({
+			name,
+			type: selectedType,
+			balance: Number(balance),
+			user_id: data.user!.id
+		});
+
+		loading = false;
+
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			goto('/accounts');
+		}
+	}
 </script>
 
 <div class="max-w-md mx-auto mt-8">
@@ -18,19 +49,13 @@
 	</div>
 
 	<div class="rounded-xl border bg-card text-card-foreground shadow p-6">
-		{#if form?.message}
-			<div class="mb-4 text-sm font-medium text-destructive">{form.message}</div>
+		{#if errorMsg}
+			<div class="mb-4 text-sm font-medium text-destructive">{errorMsg}</div>
 		{/if}
-		<form method="POST" use:enhance={() => {
-			loading = true;
-			return async ({ update }) => {
-				loading = false;
-				update();
-			};
-		}} class="space-y-4">
+		<form onsubmit={handleCreate} class="space-y-4">
 			<div class="space-y-2">
 				<Label for="name">Account Name</Label>
-				<Input id="name" name="name" placeholder="e.g. Main Checking" required />
+				<Input id="name" bind:value={name} placeholder="e.g. Main Checking" required />
 			</div>
 
 			<div class="space-y-2">
@@ -47,12 +72,11 @@
 						<Select.Item value="other">Other</Select.Item>
 					</Select.Content>
 				</Select.Root>
-				<input type="hidden" name="type" value={selectedType} required />
 			</div>
 
 			<div class="space-y-2">
 				<Label for="balance">Initial Balance (¥)</Label>
-				<Input id="balance" name="balance" type="number" step="1" defaultValue="0" required />
+				<Input id="balance" type="number" step="1" bind:value={balance} required />
 			</div>
 
 			<Button type="submit" class="w-full" disabled={loading || !selectedType}>

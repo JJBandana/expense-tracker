@@ -1,30 +1,41 @@
-import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { createBrowserClient, createServerClient, isBrowser } from '@supabase/ssr';
+import { createBrowserClient } from '@supabase/ssr';
 import type { LayoutLoad } from './$types';
+import { browser } from '$app/environment';
+import { redirect } from '@sveltejs/kit';
 
-export const load: LayoutLoad = async ({ fetch, data, depends }) => {
+export const ssr = false;
+export const prerender = false;
+
+export const load: LayoutLoad = async ({ fetch, depends, url }) => {
 	depends('supabase:auth');
 
-	const supabase = isBrowser()
-		? createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-				global: {
-					fetch
-				}
-			})
-		: createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-				global: {
-					fetch
-				},
-				cookies: {
-					getAll() {
-						return data.cookies;
-					}
-				}
-			});
+	if (!browser) {
+		return { supabase: null, session: null, user: null };
+	}
+
+	const supabaseUrl = localStorage.getItem('supabase_url');
+	const supabaseAnonKey = localStorage.getItem('supabase_anon_key');
+
+	if (!supabaseUrl || !supabaseAnonKey) {
+		if (url.pathname !== '/onboarding') {
+			throw redirect(303, '/onboarding');
+		}
+		return { supabase: null, session: null, user: null };
+	}
+
+	const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+		global: { fetch }
+	});
 
 	const {
 		data: { session }
-	} = await supabase.auth.getSession();
+	} = await supabase!.auth.getSession();
 
-	return { supabase, session, user: data.user };
+	const user = session?.user ?? null;
+
+	if (!user && url.pathname !== '/login' && url.pathname !== '/register' && url.pathname !== '/onboarding') {
+		throw redirect(303, '/login');
+	}
+
+	return { supabase, session, user };
 };

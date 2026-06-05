@@ -1,7 +1,8 @@
-import type { PageServerLoad } from './$types';
+import type { PageLoad } from './$types';
 import { toDate } from 'date-fns-tz';
 
-export const load: PageServerLoad = async ({ url, locals: { supabase }, parent }) => {
+export const load: PageLoad = async ({ parent, url }) => {
+	const { supabase } = await parent();
 	const { profile } = await parent();
 	const timeZone = profile?.timezone || 'UTC';
 
@@ -28,8 +29,8 @@ export const load: PageServerLoad = async ({ url, locals: { supabase }, parent }
 	const utcStart = toDate(localStartStr, { timeZone }).toISOString();
 	const utcEnd = toDate(localEndStr, { timeZone }).toISOString();
 
-	const { data: transactions } = await supabase
-		.from('transactions')
+	const { data: transactions } = await supabase!
+			.from('transactions')
 		.select('*, accounts!transactions_account_id_fkey(name), categories(name, icon), destination_account:accounts!transactions_destination_account_id_fkey(name)')
 		.gte('date', utcStart)
 		.lt('date', utcEnd)

@@ -1,23 +1,28 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
-	import type { ActionData, PageData } from './$types';
+	import type { PageData } from './$types';
 
-	let { form, data }: { form: ActionData; data: PageData } = $props();
+	let { data }: { data: PageData } = $props();
+	
 	let loading = $state(false);
 	let isDeleting = $state(false);
-	
+	let errorMsg = $state('');
+
 	let selectedType = $state(data.transaction.type);
 	let selectedAccount = $state(data.transaction.account_id);
 	let selectedDestinationAccount = $state(data.transaction.destination_account_id ?? '');
 	let selectedCategory = $state(data.transaction.category_id ?? '');
+	
+	let amount = $state(data.transaction.amount.toString());
+	let notes = $state(data.transaction.notes ?? '');
 
 	let tz = data.profile?.timezone || 'UTC';
 	let transactionDate = new Date(data.transaction.date);
-	let localDateTime = new Intl.DateTimeFormat('en-CA', {
+	let localDateTime = $state(new Intl.DateTimeFormat('en-CA', {
 		timeZone: tz,
 		year: 'numeric',
 		month: '2-digit',
@@ -25,7 +30,7 @@
 		hour: '2-digit',
 		minute: '2-digit',
 		hour12: false
-	}).format(transactionDate).replace(', ', 'T');
+	}).format(transactionDate).replace(', ', 'T'));
 
 	let filteredCategories = $derived(
 		data.categories.filter((c) => c.type === selectedType)
@@ -40,6 +45,89 @@
 			selectedCategory = '';
 		}
 	});
+
+	async function handleUpdate(e: Event) {
+		e.preventDefault();
+		loading = true;
+		errorMsg = '';
+
+		if (!selectedAccount) {
+			errorMsg = 'Please select an account';
+			loading = false;
+			return;
+		}
+
+		if (selectedType === 'transfer' && !selectedDestinationAccount) {
+			errorMsg = 'Please select a destination account';
+			loading = false;
+			return;
+		}
+
+		const [datePart, timePart] = localDateTime.split('T');
+		let utcDate;
+		try {
+			const localDateObj = new Date(`${datePart}T${timePart}:00`);
+			utcDate = localDateObj.toISOString();
+		} catch (err) {
+			errorMsg = 'Invalid date';
+			loading = false;
+			return;
+		}
+
+		const updateData: any = {
+			type: selectedType,
+			amount: Number(amount),
+			date: utcDate,
+			notes: notes || null,
+			account_id: selectedAccount
+		};
+
+		if (selectedType === 'transfer') {
+			updateData.destination_account_id = selectedDestinationAccount;
+			updateData.category_id = null;
+		} else {
+			updateData.destination_account_id = null;
+			updateData.category_id = selectedCategory || null;
+		}
+
+		const { error } = await data.supabase!
+			.from('transactions')
+			.update(updateData)
+			.eq('id', data.transaction.id)
+			.eq('user_id', data.user!.id);
+
+		loading = false;
+
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			goto('/transactions');
+		}
+	}
+
+	async function handleDelete(e: Event) {
+		e.preventDefault();
+		if (!confirm('Are you sure you want to delete this transaction?')) {
+			return;
+		}
+		
+		isDeleting = true;
+		errorMsg = '';
+
+		const { error } = await data.supabase!
+			.from('transactions')
+			.delete()
+			.eq('id', data.transaction.id)
+			.eq('user_id', data.user!.id);
+
+		isDeleting = false;
+
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			goto('/transactions');
+		}
+	}
 </script>
 
 <div class="max-w-md mx-auto mt-8">
@@ -49,17 +137,11 @@
 	</div>
 
 	<div class="rounded-xl border bg-card text-card-foreground shadow p-6">
-		{#if form?.message}
-			<div class="mb-4 text-sm font-medium text-destructive">{form.message}</div>
+		{#if errorMsg}
+			<div class="mb-4 text-sm font-medium text-destructive">{errorMsg}</div>
 		{/if}
 		
-		<form method="POST" action="?/update" use:enhance={() => {
-			loading = true;
-			return async ({ update }) => {
-				loading = false;
-				update();
-			};
-		}} class="space-y-4">
+		<form onsubmit={handleUpdate} class="space-y-4">
 			
 			<div class="space-y-2">
 				<Label>Transaction Type</Label>
@@ -81,12 +163,12 @@
 
 			<div class="space-y-2">
 				<Label for="amount">Amount (¥)</Label>
-				<Input id="amount" name="amount" type="number" step="0.01" value={data.transaction.amount} inputmode="decimal" required />
+				<Input id="amount" type="number" step="0.01" bind:value={amount} inputmode="decimal" required />
 			</div>
 
 			<div class="space-y-2">
 				<Label for="date">Date & Time</Label>
-				<Input id="date" name="date" type="datetime-local" required value={localDateTime} />
+				<Input id="date" type="datetime-local" required bind:value={localDateTime} />
 			</div>
 
 			<div class="space-y-2">
@@ -101,7 +183,6 @@
 						{/each}
 					</Select.Content>
 				</Select.Root>
-				<input type="hidden" name="account" value={selectedAccount} required />
 			</div>
 
 			{#if selectedType === 'transfer'}
@@ -117,7 +198,6 @@
 							{/each}
 						</Select.Content>
 					</Select.Root>
-					<input type="hidden" name="destination_account" value={selectedDestinationAccount} />
 				</div>
 			{:else}
 				<div class="space-y-2">
@@ -132,13 +212,12 @@
 							{/each}
 						</Select.Content>
 					</Select.Root>
-					<input type="hidden" name="category" value={selectedCategory} />
 				</div>
 			{/if}
 
 			<div class="space-y-2">
 				<Label for="notes">Notes (Optional)</Label>
-				<Input id="notes" name="notes" value={data.transaction.notes ?? ''} />
+				<Input id="notes" bind:value={notes} />
 			</div>
 
 			<Button type="submit" class="w-full" disabled={loading || isDeleting || !selectedAccount}>
@@ -147,17 +226,7 @@
 		</form>
 
 		<div class="mt-8 border-t pt-6">
-			<form method="POST" action="?/delete" use:enhance={(e) => {
-				if (!confirm('Are you sure you want to delete this transaction?')) {
-					e.cancel();
-					return;
-				}
-				isDeleting = true;
-				return async ({ update }) => {
-					isDeleting = false;
-					update();
-				};
-			}}>
+			<form onsubmit={handleDelete}>
 				<Button type="submit" variant="destructive" class="w-full" disabled={loading || isDeleting}>
 					{isDeleting ? 'Deleting...' : 'Delete Transaction'}
 				</Button>

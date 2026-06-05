@@ -1,7 +1,8 @@
-import type { PageServerLoad } from './$types';
+import type { PageLoad } from './$types';
 import { toDate } from 'date-fns-tz';
 
-export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => {
+export const load: PageLoad = async ({ parent }) => {
+	const { supabase } = await parent();
 	const { profile } = await parent();
 	const timeZone = profile?.timezone || 'UTC';
 
@@ -14,8 +15,8 @@ export const load: PageServerLoad = async ({ locals: { supabase }, parent }) => 
 	const utcStart = toDate(localStartStr, { timeZone }).toISOString();
 
 	const [categoriesResult, transactionsResult] = await Promise.all([
-		supabase.from('categories').select('*').order('name'),
-		supabase.from('transactions').select('category_id, amount, type').gte('date', utcStart).eq('type', 'expense')
+		supabase!.from('categories').select('*').order('name'),
+		supabase!.from('transactions').select('category_id, amount, type').gte('date', utcStart).eq('type', 'expense')
 	]);
 
 	const categories = categoriesResult.data ?? [];

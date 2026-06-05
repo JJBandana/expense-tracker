@@ -1,9 +1,16 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
 	import { LayoutDashboard, Wallet, Tags, ArrowRightLeft, LogOut, Settings, Users } from '@lucide/svelte';
+	import type { LayoutData } from './$types';
 
-	let { children } = $props();
+	let { data, children }: { data: LayoutData, children: any } = $props();
+
+	const handleLogout = async () => {
+		await data.supabase!.auth.signOut();
+		goto('/login');
+	};
 
 	const navItems = [
 		{ name: 'Overview', href: '/', icon: LayoutDashboard },
@@ -39,9 +46,7 @@
 			{/each}
 		</nav>
 		<div class="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-			<form method="POST" action="/?/logout" class="ml-auto">
-				<Button variant="outline" size="sm" type="submit">Log out</Button>
-			</form>
+			<Button variant="outline" size="sm" type="button" class="ml-auto" onclick={handleLogout}>Log out</Button>
 		</div>
 	</header>
 
@@ -50,12 +55,10 @@
 		class="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background px-4 md:hidden"
 	>
 		<div class="flex items-center gap-2 font-semibold">🪙 Expense Tracker</div>
-		<form method="POST" action="/?/logout">
-			<button type="submit" class="p-2 text-muted-foreground hover:text-foreground">
-				<LogOut class="h-5 w-5" />
-				<span class="sr-only">Log out</span>
-			</button>
-		</form>
+		<button type="button" class="p-2 text-muted-foreground hover:text-foreground" onclick={handleLogout}>
+			<LogOut class="h-5 w-5" />
+			<span class="sr-only">Log out</span>
+		</button>
 	</header>
 
 	<main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">

@@ -1,25 +1,30 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
 	import { Calendar } from '@lucide/svelte';
-	import type { ActionData, PageData } from './$types';
+	import type { PageData } from './$types';
 
-	let { form, data }: { form: ActionData; data: PageData } = $props();
+	let { data }: { data: PageData } = $props();
+	
 	let loading = $state(false);
 	let showDate = $state(false);
+	let errorMsg = $state('');
 
 	let lastTx = data.lastTx;
 	let selectedType = $state(lastTx?.type || 'expense');
 	let selectedAccount = $state(lastTx?.account_id || (data.accounts.length > 0 ? data.accounts[0].id : ''));
 	let selectedCategory = $state(lastTx?.category_id || '');
 	let selectedDestinationAccount = $state('');
+	
+	let amount = $state('');
+	let notes = $state('');
 
 	let now = new Date();
 	let tz = data.profile?.timezone || 'UTC';
-	let currentDateTime = new Intl.DateTimeFormat('en-CA', {
+	let currentDateTime = $state(new Intl.DateTimeFormat('en-CA', {
 		timeZone: tz,
 		year: 'numeric',
 		month: '2-digit',
@@ -27,7 +32,7 @@
 		hour: '2-digit',
 		minute: '2-digit',
 		hour12: false
-	}).format(now).replace(', ', 'T');
+	}).format(now).replace(', ', 'T'));
 
 	// Filter categories based on transaction type
 	let filteredCategories = $derived(data.categories.filter((c) => c.type === selectedType));
@@ -41,6 +46,64 @@
 			selectedCategory = '';
 		}
 	});
+
+	async function handleCreate(e: Event) {
+		e.preventDefault();
+		loading = true;
+		errorMsg = '';
+
+		if (!selectedAccount) {
+			errorMsg = 'Please select an account';
+			loading = false;
+			return;
+		}
+
+		if (selectedType === 'transfer' && !selectedDestinationAccount) {
+			errorMsg = 'Please select a destination account';
+			loading = false;
+			return;
+		}
+
+		// Ensure timezone is correct when saving to DB
+		const [datePart, timePart] = currentDateTime.split('T');
+		let utcDate;
+		try {
+			// Convert local time back to UTC for database
+			const localDateObj = new Date(`${datePart}T${timePart}:00`);
+			utcDate = localDateObj.toISOString();
+		} catch (err) {
+			errorMsg = 'Invalid date';
+			loading = false;
+			return;
+		}
+
+		const txData: any = {
+			type: selectedType,
+			amount: Number(amount),
+			date: utcDate,
+			notes: notes || null,
+			account_id: selectedAccount,
+			user_id: data.user!.id
+		};
+
+		if (selectedType === 'transfer') {
+			txData.destination_account_id = selectedDestinationAccount;
+			txData.category_id = null;
+		} else {
+			txData.destination_account_id = null;
+			txData.category_id = selectedCategory || null;
+		}
+
+		const { error } = await data.supabase!.from('transactions').insert(txData);
+
+		loading = false;
+
+		if (error) {
+			errorMsg = error.message;
+		} else {
+			goto('/transactions');
+		}
+	}
 </script>
 
 <div class="mx-auto mt-8 max-w-md">
@@ -50,8 +113,8 @@
 	</div>
 
 	<div class="rounded-xl border bg-card p-6 text-card-foreground shadow">
-		{#if form?.message}
-			<div class="mb-4 text-sm font-medium text-destructive">{form.message}</div>
+		{#if errorMsg}
+			<div class="mb-4 text-sm font-medium text-destructive">{errorMsg}</div>
 		{/if}
 
 		{#if data.accounts.length === 0}
@@ -60,17 +123,7 @@
 				<a href="/accounts/new" class={buttonVariants()}>Create Account</a>
 			</div>
 		{:else}
-			<form
-				method="POST"
-				use:enhance={() => {
-					loading = true;
-					return async ({ update }) => {
-						loading = false;
-						update();
-					};
-				}}
-				class="space-y-4"
-			>
+			<form onsubmit={handleCreate} class="space-y-4">
 				<div class="space-y-2">
 					<Label>Transaction Type</Label>
 					<div class="flex gap-4">
@@ -94,9 +147,9 @@
 					<div class="flex gap-2 items-center">
 						<Input
 							id="amount"
-							name="amount"
 							type="number"
 							step="0.01"
+							bind:value={amount}
 							placeholder="0.00"
 							class="flex-1 text-lg h-12"
 							inputmode="decimal"
@@ -120,14 +173,11 @@
 						<Label for="date">Date & Time</Label>
 						<Input
 							id="date"
-							name="date"
 							type="datetime-local"
+							bind:value={currentDateTime}
 							required
-							value={currentDateTime}
 						/>
 					</div>
-				{:else}
-					<input type="hidden" name="date" value={currentDateTime} />
 				{/if}
 
 				<div class="space-y-2">
@@ -142,7 +192,6 @@
 							{/each}
 						</Select.Content>
 					</Select.Root>
-					<input type="hidden" name="account" value={selectedAccount} required />
 				</div>
 
 				{#if selectedType === 'transfer'}
@@ -158,7 +207,6 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
-						<input type="hidden" name="destination_account" value={selectedDestinationAccount} />
 					</div>
 				{:else}
 					<div class="space-y-2">
@@ -173,13 +221,12 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
-						<input type="hidden" name="category" value={selectedCategory} />
 					</div>
 				{/if}
 
 				<div class="space-y-2">
 					<Label for="notes">Notes (Optional)</Label>
-					<Input id="notes" name="notes" placeholder="What was this for?" />
+					<Input id="notes" bind:value={notes} placeholder="What was this for?" />
 				</div>
 
 				<Button type="submit" class="w-full" disabled={loading || !selectedAccount}>
