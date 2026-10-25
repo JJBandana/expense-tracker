@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
-	import { LayoutDashboard, Wallet, Tags, ArrowRightLeft, LogOut, Settings, Users } from '@lucide/svelte';
+	import { LayoutDashboard, ArrowRightLeft, ListTodo, LogOut, Settings } from '@lucide/svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData, children: any } = $props();
@@ -14,10 +14,8 @@
 
 	const navItems = [
 		{ name: 'Overview', href: '/', icon: LayoutDashboard },
-		{ name: 'Accounts', href: '/accounts', icon: Wallet },
-		{ name: 'Categories', href: '/categories', icon: Tags },
 		{ name: 'Transactions', href: '/transactions', icon: ArrowRightLeft },
-		{ name: 'Groups', href: '/groups', icon: Users },
+		{ name: 'Tasks', href: '/tasks', icon: ListTodo },
 		{ name: 'Settings', href: '/settings', icon: Settings }
 	];
 </script>
