@@ -5,6 +5,8 @@
 	import * as Select from '$lib/components/ui/select';
 	import { ChevronDown, Plus } from '@lucide/svelte';
 	import { untrack } from 'svelte';
+	import { flip } from 'svelte/animate';
+	import { fade, slide } from 'svelte/transition';
 	import type { Database } from '$lib/database.types';
 	import type { PageData } from './$types';
 
@@ -19,6 +21,10 @@
 	const priorityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 	let { data }: { data: PageData } = $props();
+
+	const reduceMotion =
+		typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const listDuration = reduceMotion ? 0 : 180;
 
 	let tasks = $state<Task[]>(untrack(() => data.tasks));
 	let errorMsg = $state(untrack(() => data.tasksError ?? ''));
@@ -213,6 +219,7 @@
 	{#if errorMsg}
 		<div
 			role="alert"
+			transition:fade|local={{ duration: 150 }}
 			class="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
 		>
 			{errorMsg}
@@ -258,7 +265,11 @@
 		{#each visible as task (task.id)}
 			{@const priority = priorityOf(task)}
 			{@const overdue = isOverdue(task)}
-			<li class="rounded-xl border bg-card text-card-foreground shadow">
+			<li
+				class="rounded-xl border bg-card text-card-foreground shadow transition-colors hover:border-primary/40"
+				animate:flip={{ duration: listDuration }}
+				transition:slide|local={{ duration: listDuration }}
+			>
 				<div class="flex items-start gap-3 p-4">
 					<input
 						type="checkbox"
@@ -275,8 +286,10 @@
 						aria-expanded={editingId === task.id}
 					>
 						<span class="flex flex-wrap items-center gap-2">
-							<span class="font-medium {task.completed ? 'text-muted-foreground line-through' : ''}"
-								>{task.title}</span
+							<span
+								class="font-medium transition-colors duration-200 {task.completed
+									? 'text-muted-foreground line-through'
+									: ''}">{task.title}</span
 							>
 							<span
 								class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs {priority.badge}"
@@ -302,7 +315,7 @@
 					</button>
 
 					<ChevronDown
-						class="h-4 w-4 shrink-0 text-muted-foreground transition-transform {editingId ===
+						class="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 {editingId ===
 						task.id
 							? 'rotate-180'
 							: ''}"
@@ -310,7 +323,11 @@
 				</div>
 
 				{#if editingId === task.id}
-					<form onsubmit={saveTask} class="space-y-4 border-t p-4">
+					<form
+						onsubmit={saveTask}
+						class="space-y-4 border-t p-4"
+						transition:slide={{ duration: listDuration }}
+					>
 						<div class="space-y-2">
 							<Label for="task-title-{task.id}">Title</Label>
 							<Input id="task-title-{task.id}" bind:value={draft.title} required maxlength={200} />
@@ -368,7 +385,10 @@
 				{/if}
 			</li>
 		{:else}
-			<li class="rounded-xl border bg-card p-10 text-center">
+			<li
+				class="rounded-xl border bg-card p-10 text-center"
+				transition:fade|local={{ duration: listDuration }}
+			>
 				<p class="text-muted-foreground">{emptyMessage}</p>
 			</li>
 		{/each}
