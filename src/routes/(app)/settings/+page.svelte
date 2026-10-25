@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
+	import { Wallet, Tags, Users, ChevronRight } from '@lucide/svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -76,5 +77,40 @@
 				{loading ? 'Saving...' : 'Save Preferences'}
 			</Button>
 		</form>
+	</div>
+
+	<div class="mt-8 space-y-4">
+		<h3 class="text-lg font-semibold tracking-tight">Management</h3>
+		<div class="rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
+			<a href="/accounts" class="flex items-center justify-between p-4 border-b hover:bg-muted/50 transition-colors">
+				<div class="flex items-center gap-3">
+					<div class="bg-primary/10 p-2 rounded-lg text-primary">
+						<Wallet class="h-5 w-5" />
+					</div>
+					<div class="font-medium">Accounts</div>
+				</div>
+				<ChevronRight class="h-5 w-5 text-muted-foreground" />
+			</a>
+			
+			<a href="/categories" class="flex items-center justify-between p-4 border-b hover:bg-muted/50 transition-colors">
+				<div class="flex items-center gap-3">
+					<div class="bg-primary/10 p-2 rounded-lg text-primary">
+						<Tags class="h-5 w-5" />
+					</div>
+					<div class="font-medium">Categories</div>
+				</div>
+				<ChevronRight class="h-5 w-5 text-muted-foreground" />
+			</a>
+
+			<a href="/groups" class="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+				<div class="flex items-center gap-3">
+					<div class="bg-primary/10 p-2 rounded-lg text-primary">
+						<Users class="h-5 w-5" />
+					</div>
+					<div class="font-medium">Shared Groups</div>
+				</div>
+				<ChevronRight class="h-5 w-5 text-muted-foreground" />
+			</a>
+		</div>
 	</div>
 </div>
