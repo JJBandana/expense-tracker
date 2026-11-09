@@ -1,11 +1,57 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
+	import { acknowledgePendingTask, readPendingTasks } from '$lib/tasks-cache';
+	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { LayoutDashboard, ArrowRightLeft, ListTodo, LogOut, Settings } from '@lucide/svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData, children: any } = $props();
+	let syncing = $state(false);
+	let syncError = $state('');
+
+	async function syncPendingTasks() {
+		if (syncing || !navigator.onLine || !data.supabase || !data.user) return;
+		const supabase = data.supabase;
+		const userId = data.user.id;
+		const project = localStorage.getItem('supabase_url') ?? '';
+		syncing = true;
+		syncError = '';
+		try {
+			const pending = await readPendingTasks(project, userId);
+			for (const task of pending) {
+				const { error } = await supabase.from('tasks').upsert(task, {
+					onConflict: 'id', ignoreDuplicates: true
+				});
+				if (error) throw error;
+				const { data: saved, error: readError } = await supabase.from('tasks')
+					.select('*').eq('id', task.id).eq('user_id', userId).single();
+				if (readError) throw readError;
+				if (saved.title !== task.title || saved.notes !== task.notes || saved.completed !== task.completed ||
+					saved.priority !== task.priority || saved.due_date !== task.due_date ||
+					Date.parse(saved.created_at) !== Date.parse(task.created_at)) {
+					throw new Error('The server has a different version of this task.');
+				}
+				await acknowledgePendingTask(project, userId, saved);
+			}
+			if (pending.length) await invalidate('tasks:list');
+		} catch (error) {
+			console.error('Task synchronization failed:', error);
+			syncError = 'Some tasks could not be synchronized. They remain saved on this device.';
+			await invalidate('tasks:list');
+		} finally {
+			syncing = false;
+		}
+	}
+
+	$effect(() => {
+		// Re-run for the signed-in user, including after returning to the app.
+		if (!data.user || !data.supabase) return;
+		untrack(() => void syncPendingTasks());
+		window.addEventListener('task-queued', syncPendingTasks);
+		return () => window.removeEventListener('task-queued', syncPendingTasks);
+	});
 
 	const handleLogout = async () => {
 		await data.supabase!.auth.signOut();
@@ -19,6 +65,8 @@
 		{ name: 'Settings', href: '/settings', icon: Settings }
 	];
 </script>
+
+<svelte:window ononline={syncPendingTasks} onfocus={syncPendingTasks} />
 
 <div class="flex min-h-screen w-full flex-col bg-zinc-50 pb-16 md:pb-0 dark:bg-zinc-950">
 	<!-- Desktop Header Navigation -->
@@ -60,6 +108,10 @@
 	</header>
 
 	<main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+		{#if syncing}<p role="status" class="text-sm">Synchronizing locally saved tasks…</p>{/if}
+		{#if syncError}
+			<div role="alert" class="rounded-lg border p-3 text-sm">{syncError} <button type="button" class="underline" onclick={syncPendingTasks}>Retry</button></div>
+		{/if}
 		{@render children()}
 	</main>
 

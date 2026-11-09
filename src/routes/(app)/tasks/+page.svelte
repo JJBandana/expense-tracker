@@ -9,6 +9,7 @@
 	import { fade, slide } from 'svelte/transition';
 	import type { Database } from '$lib/database.types';
 	import type { PageData } from './$types';
+	import { addPendingTask } from '$lib/tasks-cache';
 
 	type Task = Database['public']['Tables']['tasks']['Row'];
 	type Filter = 'pending' | 'completed' | 'all';
@@ -27,6 +28,11 @@
 	const listDuration = reduceMotion ? 0 : 180;
 
 	let tasks = $state<Task[]>(untrack(() => data.tasks));
+	let pendingTaskIds = $state<string[]>(untrack(() => data.pendingTaskIds));
+	$effect(() => {
+		tasks = data.tasks;
+		pendingTaskIds = data.pendingTaskIds;
+	});
 	let errorMsg = $state(untrack(() => data.tasksError ?? ''));
 	let filter = $state<Filter>('pending');
 	let sort = $state<'due' | 'priority'>('due');
@@ -97,6 +103,25 @@
 
 		adding = true;
 		errorMsg = '';
+		if (!navigator.onLine) {
+			const now = new Date().toISOString();
+			const task: Task = {
+				id: crypto.randomUUID(), user_id: data.user!.id, title, notes: null,
+				due_date: null, priority: 'medium', completed: false, created_at: now, updated_at: now
+			};
+			try {
+				await addPendingTask(localStorage.getItem('supabase_url') ?? '', data.user!.id, task);
+				tasks = [task, ...tasks];
+				pendingTaskIds = [...pendingTaskIds, task.id];
+				newTitle = '';
+				window.dispatchEvent(new Event('task-queued'));
+			} catch {
+				errorMsg = 'Could not save the task on this device.';
+			} finally {
+				adding = false;
+			}
+			return;
+		}
 
 		const { data: created, error } = await data
 			.supabase!.from('tasks')
@@ -116,6 +141,7 @@
 	}
 
 	async function toggleTask(task: Task) {
+		if (pendingTaskIds.includes(task.id)) return;
 		const next = !task.completed;
 		task.completed = next;
 		errorMsg = '';
@@ -132,6 +158,7 @@
 	}
 
 	function openEditor(task: Task) {
+		if (pendingTaskIds.includes(task.id)) return;
 		if (editingId === task.id) {
 			editingId = null;
 			return;
@@ -201,6 +228,9 @@
 			{pendingCount} pending · {completedCount} completed
 		</p>
 	</header>
+	{#if pendingTaskIds.length}
+		<p role="status" class="rounded-lg border p-3 text-sm">{pendingTaskIds.length} task(s) saved on this device, awaiting synchronization. Pending tasks cannot be edited or deleted.</p>
+	{/if}
 
 	<form onsubmit={addTask} class="flex gap-2">
 		<Input
@@ -275,6 +305,7 @@
 						type="checkbox"
 						class="mt-1 h-5 w-5 shrink-0 cursor-pointer accent-primary"
 						checked={task.completed}
+						disabled={pendingTaskIds.includes(task.id)}
 						onchange={() => toggleTask(task)}
 						aria-label={`Mark "${task.title}" as ${task.completed ? 'pending' : 'completed'}`}
 					/>
@@ -289,8 +320,9 @@
 							<span
 								class="font-medium transition-colors duration-200 {task.completed
 									? 'text-muted-foreground line-through'
-									: ''}">{task.title}</span
+								: ''}">{task.title}</span
 							>
+							{#if pendingTaskIds.includes(task.id)}<span class="text-xs text-muted-foreground">Saved locally · not synced</span>{/if}
 							<span
 								class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs {priority.badge}"
 							>
