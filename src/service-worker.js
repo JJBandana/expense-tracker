@@ -1,7 +1,7 @@
 import { base, build, files, version } from '$service-worker';
 
 const cacheName = `expense-tracker-assets-${version}`;
-const shell = `${base}/index.html`;
+const shell = `${base}/`;
 const assets = [...build, ...files, shell];
 
 self.addEventListener('install', (event) => {
