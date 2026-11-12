@@ -5,10 +5,25 @@
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { invalidate } from '$app/navigation';
+	import { invalidate, onNavigate } from '$app/navigation';
 
 	let { children, data } = $props();
 	let { supabase, session } = $derived(data);
+
+	onNavigate((navigation) => {
+		if (
+			!document.startViewTransition ||
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+			navigation.from?.url.pathname === navigation.to?.url.pathname
+		) return;
+
+		return new Promise<void>((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 
 	$effect(() => {
 		if (!supabase) return;

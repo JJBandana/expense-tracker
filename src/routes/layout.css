@@ -7,6 +7,11 @@
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 180ms;
+}
+
 :root {
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
